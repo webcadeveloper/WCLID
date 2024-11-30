@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int       @id @default(autoincrement())
+  username   String    @unique
+  passwordHash String
+  role       Role
+  firstName  String
+  lastName   String
+  email      String    @unique
+  phone      String?
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  lastLogin  DateTime?
+  cases      Case[]
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  metrics    OperatorMetric[]
+}
+
+model Case {
+  id               Int       @id @default(autoincrement())
+  caseNumber       String    @unique
+  status           CaseStatus
+  isPositive       Boolean   @default(false)
+  firstName        String
+  lastName         String
+  aNumber          String
+  courtAddress     String
+  courtPhone       String
+  clientPhone      String?
+  otherClientPhone String?
+  clientAddress    String?
+  clientEmail      String?
+  operator         User      @relation(fields: [operatorId], references: [id])
+  operatorId       Int
+  createdAt        DateTime  @default(now())
+  resolvedAt       DateTime?
+}
+
+model OperatorMetric {
+  id                    Int      @id @default(autoincrement())
+  operator              User     @relation(fields: [operatorId], references: [id])
+  operatorId            Int
+  casesCompleted        Int      @default(0)
+  casesPending          Int      @default(0)
+  successRate           Float    @default(0)
+  averageResolutionTime Float?
+  date                  DateTime @db.Date
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  senderId   Int
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  receiverId Int
+  message    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+enum Role {
+  OPERATOR
+  SUPERVISOR
+  ADMIN
+}
+
+enum CaseStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  CANCELED
+}
